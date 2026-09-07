@@ -1,0 +1,14 @@
+# raw data — never commit
+olist_zip.zip
+*.parquet
+*.csv
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.log
+
+# python
+__pycache__/
+.ipynb_checkpoints/
+.venv/

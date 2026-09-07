@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopStream — End-to-End Databricks Lakehouse Architecture</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg0: #0b1220;
+    --bg1: #111a2e;
+    --card: #17223b;
+    --card-2: #1c2947;
+    --line: rgba(255,255,255,0.08);
+    --text: #e7ecf5;
+    --muted: #94a3b8;
+    --bronze: #e8933c;
+    --bronze-glow: rgba(232,147,60,0.35);
+    --silver: #9fb4d0;
+    --silver-glow: rgba(159,180,208,0.30);
+    --gold: #ffd94d;
+    --gold-glow: rgba(255,217,77,0.30);
+    --cyan: #3ccce8;
+    --purple: #a78bfa;
+    --green: #4ade80;
+    --pink: #f472b6;
+  }
+
+  body {
+    background: linear-gradient(160deg, var(--bg0) 0%, var(--bg1) 55%, #0d1424 100%);
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 36px 24px;
+  }
+
+  .canvas {
+    width: 1500px;
+    max-width: 100%;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(168,85,247,0.08), transparent 60%),
+      radial-gradient(1000px 500px at 85% -10%, rgba(60,204,232,0.08), transparent 60%),
+      linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0) 40%);
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 44px 48px 40px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+  }
+
+  /* ---------- Header ---------- */
+  .header { text-align: center; margin-bottom: 34px; }
+  .title {
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(90deg, #ffffff 0%, #bfdbfe 40%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .title em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--cyan), var(--purple));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .subtitle {
+    margin-top: 10px;
+    font-size: 20px;
+    color: var(--muted);
+    letter-spacing: 0.3px;
+  }
+  .badges {
+    margin-top: 20px;
+    display: flex;
+    gap: 14px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .badge {
+    font-size: 15px;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.04);
+    color: var(--text);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    display: inline-block;
+  }
+  .b-cyan .dot { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+  .b-purple .dot { background: var(--purple); box-shadow: 0 0 10px var(--purple); }
+  .b-green .dot { background: var(--green); box-shadow: 0 0 10px var(--green); }
+  .b-gold .dot { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+
+  /* ---------- Layers ---------- */
+  .flow-arrow {
+    text-align: center;
+    margin: 18px 0;
+    color: var(--muted);
+    font-size: 22px;
+    letter-spacing: 6px;
+    line-height: 1;
+  }
+  .layer-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .layer-title .tag {
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 8px;
+  }
+  .layer-title .desc { color: var(--muted); font-size: 16px; }
+  .layer-title .rule { flex: 1; height: 1px; background: var(--line); }
+
+  .grid { display: grid; gap: 20px; }
+
+  /* ---------- Sources / Ingestion cards ---------- */
+  .two-col { grid-template-columns: 1fr 1fr; }
+
+  .card {
+    background: linear-gradient(180deg, var(--card-2), var(--card));
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 22px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+  }
+  .card.cyan::before { background: linear-gradient(90deg, var(--cyan), transparent); }
+  .card.purple::before { background: linear-gradient(90deg, var(--purple), transparent); }
+  .card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
+  .card.pink::before { background: linear-gradient(90deg, var(--pink), transparent); }
+
+  .card .kicker {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .card h3 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
+  .card p { font-size: 15px; color: var(--muted); line-height: 1.55; }
+  .card ul { list-style: none; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .card li { font-size: 14.5px; color: var(--text); display: flex; align-items: center; gap: 10px; }
+  .card li::before { content: "▸"; color: var(--cyan); font-weight: 700; }
+
+  /* ---------- Medallion ---------- */
+  .medallion { grid-template-columns: 1fr 1fr 1fr; gap: 22px; }
+
+  .medal {
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    overflow: hidden;
+    background: var(--card);
+    display: flex;
+    flex-direction: column;
+  }
+  .medal-head { padding: 18px 22px; display: flex; align-items: center; gap: 14px; }
+  .medal-head .icon {
+    width: 46px; height: 46px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 800;
+  }
+  .medal-head .name { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+  .medal-head .motto { font-size: 13px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; font-weight: 700; }
+
+  .bronze .medal-head { background: linear-gradient(180deg, rgba(232,147,60,0.18), transparent); }
+  .bronze .icon { background: var(--bronze); color: #1d1105; box-shadow: 0 0 26px var(--bronze-glow); }
+  .silver .medal-head { background: linear-gradient(180deg, rgba(159,180,208,0.18), transparent); }
+  .silver .icon { background: var(--silver); color: #161b26; box-shadow: 0 0 26px var(--silver-glow); }
+  .gold .medal-head { background: linear-gradient(180deg, rgba(255,217,77,0.16), transparent); }
+  .gold .icon { background: var(--gold); color: #241a02; box-shadow: 0 0 26px var(--gold-glow); }
+
+  .medal-body { padding: 8px 22px 20px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+  .tables { display: flex; flex-direction: column; gap: 7px; }
+  .tbl {
+    font-family: 'Cascadia Code', 'Segoe UI Mono', Consolas, monospace;
+    font-size: 13.5px;
+    padding: 9px 12px;
+    border-radius: 9px;
+    border: 1px dashed rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.035);
+  }
+  .bronze .tbl { border-color: rgba(232,147,60,0.35); }
+  .silver .tbl { border-color: rgba(159,180,208,0.35); }
+  .gold .tbl { border-color: rgba(255,217,77,0.35); }
+  .note { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .pill {
+    display: inline-block;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-top: 4px;
+    align-self: flex-start;
+  }
+  .bronze .pill { background: rgba(232,147,60,0.16); color: var(--bronze); border: 1px solid rgba(232,147,60,0.4); }
+  .silver .pill { background: rgba(159,180,208,0.14); color: var(--silver); border: 1px solid rgba(159,180,208,0.4); }
+  .gold .pill { background: rgba(255,217,77,0.14); color: var(--gold); border: 1px solid rgba(255,217,77,0.4); }
+
+  /* ---------- Serving ---------- */
+  .three-col { grid-template-columns: repeat(3, 1fr); }
+
+  /* ---------- Footer ---------- */
+  .footer {
+    margin-top: 34px;
+    padding-top: 24px;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .footer .left { font-size: 15px; color: var(--muted); }
+  .footer .left b { color: var(--text); }
+  .footer .stack { display: flex; gap: 10px; flex-wrap: wrap; }
+  .tech {
+    font-size: 13px;
+    font-weight: 700;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--line);
+    color: var(--text);
+  }
+  .tech.acc { border-color: rgba(163,230,53,0.4); color: #d9ff7a; }
+</style>
+</head>
+<body>
+  <div class="canvas">
+
+    <!-- ================= HEADER ================= -->
+    <div class="header">
+      <div class="title">Shop<em>Stream</em></div>
+      <div class="subtitle">End-to-End Databricks Lakehouse Pipeline — Medallion Architecture on Delta Lake</div>
+      <div class="badges">
+        <span class="badge b-cyan"><span class="dot"></span>Databricks</span>
+        <span class="badge b-purple"><span class="dot"></span>Delta Lake</span>
+        <span class="badge b-green"><span class="dot"></span>PySpark</span>
+        <span class="badge b-gold"><span class="dot"></span>Structured Streaming</span>
+        <span class="badge"><span class="dot" style="background:#e8933c;box-shadow:0 0 10px#e8933c;"></span>100% Free · Community Edition</span>
+      </div>
+    </div>
+
+    <!-- ================= LAYER 1 : SOURCES ================= -->
+    <div class="layer-title">
+      <span class="tag" style="background:rgba(60,204,232,0.14);color:var(--cyan);">Data Sources</span>
+      <span class="desc">Real-world e-commerce data — batch plus a live feed</span>
+      <span class="rule"></span>
+    </div>
+    <div class="grid two-col">
+      <div class="card cyan">
+        <div class="kicker">Batch · Historical</div>
+        <h3>Olist E-Commerce Dataset</h3>
+        <p>Real anonymized Brazilian marketplace data — 100,000 orders over 2016–2018, 9 CSV files (customers, orders, items, payments, reviews, products, sellers, geolocation, categories).</p>
+        <ul>
+          <li>Full entity relationships across 9 tables</li>
+          <li>Messy real-world quality → perfect for cleansing</li>
+          <li>Lands raw in <code style="color:var(--cyan)">/FileStore/landing/</code></li>
+        </ul>
+      </div>
+      <div class="card green">
+        <div class="kicker">Streaming · Live</div>
+        <h3>Live Order Feed</h3>
+        <p>Simulated real-time stream — new order files land every few seconds to exercise a production-style streaming ingestion path, replayed from the source data.</p>
+        <ul>
+          <li>Drops new CSV batches continuously</li>
+          <li>Trickles into <code style="color:var(--green)">/FileStore/streaming/landing/</code></li>
+          <li>Puts exactly-once streaming to the test</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="flow-arrow">▼&nbsp;&nbsp;▼&nbsp;&nbsp;▼</div>
+
+    <!-- ================= LAYER 2 : INGESTION ================= -->
+    <div class="layer-title">
+      <span class="tag" style="background:rgba(167,139,250,0.14);color:var(--purple);">Ingestion</span>
+      <span class="desc">Idempotent batch + Auto Loader streaming</span>
+      <span class="rule"></span>
+    </div>
+    <div class="grid two-col">
+      <div class="card purple">
+        <div class="kicker">Batch Ingestion</div>
+        <h3>COPY INTO</h3>
+        <p>Declarative, idempotent SQL ingestion from the landing zone into Delta tables. Safely re-runnable without duplicates.</p>
+        <ul>
+          <li>Re-runs are no-ops — no double data</li>
+          <li>Schema validation at load time</li>
+          <li>Audit columns <code style="color:var(--purple)">_file</code>, <code style="color:var(--purple)">_ingest_ts</code></li>
+        </ul>
+      </div>
+      <div class="card pink">
+        <div class="kicker">Streaming Ingestion</div>
+        <h3>Auto Loader · cloudFiles</h3>
+        <p>Incremental file detection on the live feed with automatic schema inference and robust checkpointing.</p>
+        <ul>
+          <li>Processes each new file exactly once</li>
+          <li>Checkpointed state survives restarts</li>
+          <li>Schema inference on evolving data</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="flow-arrow">▼&nbsp;&nbsp;▼&nbsp;&nbsp;▼</div>
+
+    <!-- ================= LAYER 3 : MEDALLION ================= -->
+    <div class="layer-title">
+      <span class="tag" style="background:rgba(255,217,77,0.14);color:var(--gold);"">Medallion Pipeline</span>
+      <span class="desc">Raw → Clean → Analytics-ready on Delta Lake</span>
+      <span class="rule"></span>
+    </div>
+    <div class="grid medallion">
+
+      <div class="medal bronze">
+        <div class="medal-head">
+          <div class="icon">B</div>
+          <div>
+            <div class="name">Bronze</div>
+            <div class="motto">Raw · Immutable</div>
+          </div>
+        </div>
+        <div class="medal-body">
+          <div class="tables">
+            <div class="tbl">bronze_orders</div>
+            <div class="tbl">bronze_order_items</div>
+            <div class="tbl">bronze_customers</div>
+            <div class="tbl">bronze_products</div>
+            <div class="tbl">bronze_sellers</div>
+            <div class="tbl">bronze_payments</div>
+            <div class="tbl">bronze_reviews</div>
+          </div>
+          <div class="note">Data stored exactly as received — untouched and fully traceable.</div>
+          <span class="pill">Raw-as-is · audit cols · re-runnable</span>
+        </div>
+      </div>
+
+      <div class="medal silver">
+        <div class="medal-head">
+          <div class="icon">S</div>
+          <div>
+            <div class="name">Silver</div>
+            <div class="motto">Clean · Validated</div>
+          </div>
+        </div>
+        <div class="medal-body">
+          <div class="tables">
+            <div class="tbl">silver_orders</div>
+            <div class="tbl">silver_customers</div>
+            <div class="tbl">silver_products</div>
+            <div class="tbl">silver_order_items</div>
+            <div class="tbl">silver_payments</div>
+            <div class="tbl">silver_reviews</div>
+          </div>
+          <div class="note">Deduplicated, type-cast, null-handled, standardized — one canonical row per entity.</div>
+          <span class="pill">Dedupe · types · partition by month · ZORDER</span>
+        </div>
+      </div>
+
+      <div class="medal gold">
+        <div class="medal-head">
+          <div class="icon">G</div>
+          <div>
+            <div class="name">Gold</div>
+            <div class="motto">Business · Ready</div>
+          </div>
+        </div>
+        <div class="medal-body">
+          <div class="tables">
+            <div class="tbl">dim_customer</div>
+            <div class="tbl">dim_product</div>
+            <div class="tbl">dim_date</div>
+            <div class="tbl">fact_sales</div>
+            <div class="tbl">gold_daily_revenue</div>
+            <div class="tbl">gold_top_products</div>
+          </div>
+          <div class="note">Star-schema business models + curated aggregates built for fast analytical queries.</div>
+          <span class="pill">Star schema · aggregates · analytics-ready</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="flow-arrow">▼&nbsp;&nbsp;▼&nbsp;&nbsp;▼</div>
+
+    <!-- ================= LAYER 4 : SERVING ================= -->
+    <div class="layer-title">
+      <span class="tag" style="background:rgba(244,114,182,0.14);color:var(--pink);">Serving &amp; Orchestration</span>
+      <span class="desc">Operationalize the pipeline</span>
+      <span class="rule"></span>
+    </div>
+    <div class="grid three-col">
+      <div class="card">
+        <div class="kicker">Orchestration</div>
+        <h3>Multi-Task Jobs</h3>
+        <p>Bronze → Silver → Gold → Refresh chained with dependencies, retries and parameterized runs.</p>
+      </div>
+      <div class="card cyan">
+        <div class="kicker" style="color:var(--cyan);">Analytics</div>
+        <h3>Analytical SQL</h3>
+        <p>Window functions, CTEs and query plans for revenue trends, top products and customer cohorts.</p>
+      </div>
+      <div class="card gold" style="--gold:#ffd94d;">
+        <div class="kicker" style="color:var(--gold);">Visualization</div>
+        <h3>Sales Dashboard</h3>
+        <p>Live visualizations and dashboard views published straight from the gold layer.</p>
+      </div>
+    </div>
+
+    <!-- ================= FOOTER ================= -->
+    <div class="footer">
+      <div class="left">
+        <b>ShopStream</b> · Portfolio Lakehouse Project &nbsp;·&nbsp; Built on Databricks Community Edition — $0 cost
+      </div>
+      <div class="stack">
+        <span class="tech">COPY INTO</span>
+        <span class="tech">Auto Loader</span>
+        <span class="tech">Delta Lake</span>
+        <span class="tech">PySpark</span>
+        <span class="tech">SQL</span>
+        <span class="tech acc">End-to-End</span>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
