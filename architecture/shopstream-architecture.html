@@ -4,33 +4,36 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ShopStream — End-to-End Databricks Lakehouse Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --bg0: #0b1220;
-    --bg1: #111a2e;
-    --card: #17223b;
-    --card-2: #1c2947;
-    --line: rgba(255,255,255,0.08);
-    --text: #e7ecf5;
-    --muted: #94a3b8;
-    --bronze: #e8933c;
-    --bronze-glow: rgba(232,147,60,0.35);
-    --silver: #9fb4d0;
-    --silver-glow: rgba(159,180,208,0.30);
-    --gold: #ffd94d;
-    --gold-glow: rgba(255,217,77,0.30);
-    --cyan: #3ccce8;
-    --purple: #a78bfa;
-    --green: #4ade80;
-    --pink: #f472b6;
+    --ink:    #162117;
+    --bg:     #F9FAF8;
+    --light:  #EDF0EB;
+    --border: #D5DCD4;
+    --white:  #FFFFFF;
+    --accent: #F55F2C;
+    --muted:  #5A6B5C;
+    --muted-2:#8A9A8C;
+    --bronze: #B45309;
+    --silver: #64748B;
+    --gold:   #B58B12;
+    --cyan:   #0E7490;
+    --purple: #7C3AED;
+    --green:  #15803D;
+    --pink:   #DB2777;
+    --f-head: 'Space Grotesk', sans-serif;
+    --f-body: 'Source Sans 3', sans-serif;
   }
 
   body {
-    background: linear-gradient(160deg, var(--bg0) 0%, var(--bg1) 55%, #0d1424 100%);
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
-    color: var(--text);
+    background: linear-gradient(160deg, var(--bg) 0%, #F3F5F0 55%, var(--bg) 100%);
+    font-family: var(--f-body);
+    color: var(--ink);
     display: flex;
     justify-content: center;
     padding: 36px 24px;
@@ -40,54 +43,47 @@
     width: 1500px;
     max-width: 100%;
     background:
-      radial-gradient(1200px 600px at 15% -10%, rgba(168,85,247,0.08), transparent 60%),
-      radial-gradient(1000px 500px at 85% -10%, rgba(60,204,232,0.08), transparent 60%),
-      linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0) 40%);
-    border: 1px solid var(--line);
-    border-radius: 24px;
+      radial-gradient(900px 460px at 15% -6%, rgba(245,95,44,0.06), transparent 60%),
+      radial-gradient(800px 420px at 85% -6%, rgba(22,33,23,0.05), transparent 60%),
+      var(--white);
+    border: 1px solid var(--border);
+    border-radius: 18px;
     padding: 44px 48px 40px;
-    box-shadow: 0 30px 80px rgba(0,0,0,0.55);
+    box-shadow: 0 22px 60px rgba(22,33,23,0.10);
   }
 
   /* ---------- Header ---------- */
   .header { text-align: center; margin-bottom: 34px; }
   .title {
-    font-size: 52px;
-    font-weight: 800;
+    font-family: var(--f-head);
+    font-size: clamp(38px, 6vw, 52px);
+    font-weight: 700;
     letter-spacing: -1px;
-    background: linear-gradient(90deg, #ffffff 0%, #bfdbfe 40%, #a78bfa 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--ink);
   }
-  .title em {
-    font-style: normal;
-    background: linear-gradient(90deg, var(--cyan), var(--purple));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
+  .title em { font-style: normal; color: var(--accent); }
   .subtitle {
     margin-top: 10px;
-    font-size: 20px;
+    font-size: clamp(15px, 2.6vw, 20px);
     color: var(--muted);
     letter-spacing: 0.3px;
   }
   .badges {
     margin-top: 20px;
     display: flex;
-    gap: 14px;
+    gap: 10px;
     justify-content: center;
     flex-wrap: wrap;
   }
   .badge {
-    font-size: 15px;
-    font-weight: 600;
-    padding: 9px 18px;
+    font-family: var(--f-head);
+    font-size: 13.5px;
+    font-weight: 500;
+    padding: 7px 16px;
     border-radius: 999px;
-    border: 1px solid var(--line);
-    background: rgba(255,255,255,0.04);
-    color: var(--text);
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--ink);
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -96,16 +92,16 @@
     width: 9px; height: 9px; border-radius: 50%;
     display: inline-block;
   }
-  .b-cyan .dot { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
-  .b-purple .dot { background: var(--purple); box-shadow: 0 0 10px var(--purple); }
-  .b-green .dot { background: var(--green); box-shadow: 0 0 10px var(--green); }
-  .b-gold .dot { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+  .b-cyan .dot { background: var(--cyan); }
+  .b-purple .dot { background: var(--purple); }
+  .b-green .dot { background: var(--green); }
+  .b-gold .dot { background: var(--gold); }
 
   /* ---------- Layers ---------- */
   .flow-arrow {
     text-align: center;
     margin: 18px 0;
-    color: var(--muted);
+    color: var(--muted-2);
     font-size: 22px;
     letter-spacing: 6px;
     line-height: 1;
@@ -117,15 +113,16 @@
     margin-bottom: 16px;
   }
   .layer-title .tag {
-    font-size: 13px;
-    font-weight: 800;
-    letter-spacing: 2.5px;
+    font-family: var(--f-head);
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 2px;
     text-transform: uppercase;
     padding: 6px 14px;
-    border-radius: 8px;
+    border-radius: 6px;
   }
-  .layer-title .desc { color: var(--muted); font-size: 16px; }
-  .layer-title .rule { flex: 1; height: 1px; background: var(--line); }
+  .layer-title .desc { color: var(--muted); font-size: 15.5px; }
+  .layer-title .rule { flex: 1; height: 1px; background: var(--border); }
 
   .grid { display: grid; gap: 20px; }
 
@@ -133,9 +130,9 @@
   .two-col { grid-template-columns: 1fr 1fr; }
 
   .card {
-    background: linear-gradient(180deg, var(--card-2), var(--card));
-    border: 1px solid var(--line);
-    border-radius: 18px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
     padding: 22px 24px;
     position: relative;
     overflow: hidden;
@@ -150,75 +147,80 @@
   .card.purple::before { background: linear-gradient(90deg, var(--purple), transparent); }
   .card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
   .card.pink::before { background: linear-gradient(90deg, var(--pink), transparent); }
+  .card.gold::before { background: linear-gradient(90deg, var(--gold), transparent); }
 
   .card .kicker {
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 2px;
+    font-family: var(--f-head);
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 1.8px;
     text-transform: uppercase;
     color: var(--muted);
     margin-bottom: 8px;
   }
-  .card h3 { font-size: 22px; font-weight: 700; margin-bottom: 10px; }
-  .card p { font-size: 15px; color: var(--muted); line-height: 1.55; }
+  .card h3 { font-size: 21px; font-weight: 700; margin-bottom: 10px; }
+  .card p { font-size: 14.5px; color: var(--muted); line-height: 1.55; }
   .card ul { list-style: none; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
-  .card li { font-size: 14.5px; color: var(--text); display: flex; align-items: center; gap: 10px; }
-  .card li::before { content: "▸"; color: var(--cyan); font-weight: 700; }
+  .card li { font-size: 14px; color: var(--ink); display: flex; align-items: center; gap: 10px; }
+  .card li::before { content: "▸"; color: var(--accent); font-weight: 700; }
 
   /* ---------- Medallion ---------- */
   .medallion { grid-template-columns: 1fr 1fr 1fr; gap: 22px; }
 
   .medal {
-    border-radius: 18px;
-    border: 1px solid var(--line);
+    border-radius: 14px;
+    border: 1px solid var(--border);
     overflow: hidden;
-    background: var(--card);
+    background: var(--white);
     display: flex;
     flex-direction: column;
   }
   .medal-head { padding: 18px 22px; display: flex; align-items: center; gap: 14px; }
   .medal-head .icon {
-    width: 46px; height: 46px; border-radius: 14px;
+    width: 46px; height: 46px; border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 24px; font-weight: 800;
+    font-family: var(--f-head);
+    font-size: 24px; font-weight: 700;
   }
-  .medal-head .name { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
-  .medal-head .motto { font-size: 13px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; font-weight: 700; }
+  .medal-head .name { font-family: var(--f-head); font-size: 23px; font-weight: 700; letter-spacing: -0.5px; }
+  .medal-head .motto { font-size: 12px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; font-weight: 600; }
 
-  .bronze .medal-head { background: linear-gradient(180deg, rgba(232,147,60,0.18), transparent); }
-  .bronze .icon { background: var(--bronze); color: #1d1105; box-shadow: 0 0 26px var(--bronze-glow); }
-  .silver .medal-head { background: linear-gradient(180deg, rgba(159,180,208,0.18), transparent); }
-  .silver .icon { background: var(--silver); color: #161b26; box-shadow: 0 0 26px var(--silver-glow); }
-  .gold .medal-head { background: linear-gradient(180deg, rgba(255,217,77,0.16), transparent); }
-  .gold .icon { background: var(--gold); color: #241a02; box-shadow: 0 0 26px var(--gold-glow); }
+  .bronze .medal-head { background: linear-gradient(180deg, rgba(180,83,9,0.08), transparent); }
+  .bronze .icon { background: var(--bronze); color: #FFFFFF; }
+  .silver .medal-head { background: linear-gradient(180deg, rgba(100,116,139,0.10), transparent); }
+  .silver .icon { background: var(--silver); color: #FFFFFF; }
+  .gold .medal-head { background: linear-gradient(180deg, rgba(181,139,18,0.10), transparent); }
+  .gold .icon { background: var(--gold); color: #FFFFFF; }
 
   .medal-body { padding: 8px 22px 20px; flex: 1; display: flex; flex-direction: column; gap: 14px; }
   .tables { display: flex; flex-direction: column; gap: 7px; }
   .tbl {
     font-family: 'Cascadia Code', 'Segoe UI Mono', Consolas, monospace;
-    font-size: 13.5px;
+    font-size: 13px;
     padding: 9px 12px;
-    border-radius: 9px;
-    border: 1px dashed rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.035);
+    border-radius: 8px;
+    border: 1px dashed var(--border);
+    background: var(--bg);
+    color: var(--ink);
   }
-  .bronze .tbl { border-color: rgba(232,147,60,0.35); }
-  .silver .tbl { border-color: rgba(159,180,208,0.35); }
-  .gold .tbl { border-color: rgba(255,217,77,0.35); }
+  .bronze .tbl { border-color: rgba(180,83,9,0.45); }
+  .silver .tbl { border-color: rgba(100,116,139,0.45); }
+  .gold .tbl { border-color: rgba(181,139,18,0.45); }
   .note { font-size: 13px; color: var(--muted); line-height: 1.5; }
   .pill {
     display: inline-block;
     font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
+    font-weight: 600;
+    font-family: var(--f-head);
+    letter-spacing: 0.3px;
     padding: 4px 10px;
     border-radius: 999px;
     margin-top: 4px;
     align-self: flex-start;
   }
-  .bronze .pill { background: rgba(232,147,60,0.16); color: var(--bronze); border: 1px solid rgba(232,147,60,0.4); }
-  .silver .pill { background: rgba(159,180,208,0.14); color: var(--silver); border: 1px solid rgba(159,180,208,0.4); }
-  .gold .pill { background: rgba(255,217,77,0.14); color: var(--gold); border: 1px solid rgba(255,217,77,0.4); }
+  .bronze .pill { background: rgba(180,83,9,0.08); color: var(--bronze); border: 1px solid rgba(180,83,9,0.35); }
+  .silver .pill { background: rgba(100,116,139,0.08); color: var(--silver); border: 1px solid rgba(100,116,139,0.4); }
+  .gold .pill { background: rgba(181,139,18,0.08); color: var(--gold); border: 1px solid rgba(181,139,18,0.4); }
 
   /* ---------- Serving ---------- */
   .three-col { grid-template-columns: repeat(3, 1fr); }
@@ -227,26 +229,64 @@
   .footer {
     margin-top: 34px;
     padding-top: 24px;
-    border-top: 1px solid var(--line);
+    border-top: 1px solid var(--border);
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
     gap: 16px;
   }
-  .footer .left { font-size: 15px; color: var(--muted); }
-  .footer .left b { color: var(--text); }
-  .footer .stack { display: flex; gap: 10px; flex-wrap: wrap; }
+  .footer .left { font-size: 14.5px; color: var(--muted); }
+  .footer .left b { color: var(--ink); }
+  .footer .stack { display: flex; gap: 8px; flex-wrap: wrap; }
   .tech {
-    font-size: 13px;
-    font-weight: 700;
-    padding: 7px 14px;
+    font-family: var(--f-head);
+    font-size: 12.5px;
+    font-weight: 500;
+    padding: 6px 14px;
     border-radius: 999px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid var(--line);
-    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--ink);
   }
-  .tech.acc { border-color: rgba(163,230,53,0.4); color: #d9ff7a; }
+  .tech.acc { border-color: rgba(245,95,44,0.5); color: #D9480F; background: rgba(245,95,44,0.06); }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 900px) {
+    body { padding: 18px 10px; }
+    .canvas { padding: 24px 14px 20px; border-radius: 14px; }
+
+    .two-col, .medallion, .three-col { grid-template-columns: 1fr; gap: 16px; }
+
+    .header { margin-bottom: 24px; }
+    .badges { gap: 8px; margin-top: 14px; }
+    .badge { font-size: 12px; padding: 6px 12px; }
+    .badge .dot { width: 8px; height: 8px; }
+
+    .flow-arrow { font-size: 16px; margin: 16px 0; letter-spacing: 4px; }
+
+    .layer-title { flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .layer-title .tag { font-size: 11.5px; padding: 5px 11px; }
+    .layer-title .desc { font-size: 13.5px; width: 100%; }
+    .layer-title .rule { display: none; }
+
+    .card { padding: 18px 16px; }
+    .card h3 { font-size: 19px; }
+    .card p { font-size: 13.5px; }
+    .card li { font-size: 13.5px; }
+
+    .medal-head { padding: 14px 16px; gap: 12px; }
+    .medal-head .icon { width: 40px; height: 40px; font-size: 20px; border-radius: 10px; }
+    .medal-head .name { font-size: 21px; }
+    .medal-head .motto { font-size: 11px; }
+    .medal-body { padding: 6px 16px 16px; gap: 12px; }
+    .tbl { font-size: 12.5px; padding: 8px 10px; }
+    .note { font-size: 12.5px; }
+
+    .footer { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .footer .left { font-size: 13px; }
+    .tech { font-size: 11.5px; padding: 5px 11px; }
+  }
 </style>
 </head>
 <body>
@@ -261,34 +301,34 @@
         <span class="badge b-purple"><span class="dot"></span>Delta Lake</span>
         <span class="badge b-green"><span class="dot"></span>PySpark</span>
         <span class="badge b-gold"><span class="dot"></span>Structured Streaming</span>
-        <span class="badge"><span class="dot" style="background:#e8933c;box-shadow:0 0 10px#e8933c;"></span>100% Free · Community Edition</span>
+        <span class="badge"><span class="dot" style="background:#e8933c;"></span>100% Free · Community Edition</span>
       </div>
     </div>
 
     <!-- ================= LAYER 1 : SOURCES ================= -->
     <div class="layer-title">
-      <span class="tag" style="background:rgba(60,204,232,0.14);color:var(--cyan);">Data Sources</span>
+      <span class="tag" style="background:rgba(14,116,144,0.10);color:var(--cyan);">Data Sources</span>
       <span class="desc">Real-world e-commerce data — batch plus a live feed</span>
       <span class="rule"></span>
     </div>
     <div class="grid two-col">
       <div class="card cyan">
-        <div class="kicker">Batch · Historical</div>
+        <div class="kicker" style="color:var(--cyan);">Batch · Historical</div>
         <h3>Olist E-Commerce Dataset</h3>
         <p>Real anonymized Brazilian marketplace data — 100,000 orders over 2016–2018, 9 CSV files (customers, orders, items, payments, reviews, products, sellers, geolocation, categories).</p>
         <ul>
           <li>Full entity relationships across 9 tables</li>
           <li>Messy real-world quality → perfect for cleansing</li>
-          <li>Lands raw in <code style="color:var(--cyan)">/FileStore/landing/</code></li>
+          <li>Lands raw in <code style="color:var(--cyan)">/Volumes/shopstream/shopstream/raw_uploads/olist/</code></li>
         </ul>
       </div>
       <div class="card green">
-        <div class="kicker">Streaming · Live</div>
+        <div class="kicker" style="color:var(--green);">Streaming · Live</div>
         <h3>Live Order Feed</h3>
         <p>Simulated real-time stream — new order files land every few seconds to exercise a production-style streaming ingestion path, replayed from the source data.</p>
         <ul>
           <li>Drops new CSV batches continuously</li>
-          <li>Trickles into <code style="color:var(--green)">/FileStore/streaming/landing/</code></li>
+          <li>Trickles into <code style="color:var(--green)">/Volumes/shopstream/shopstream/streaming_landing/orders</code></li>
           <li>Puts exactly-once streaming to the test</li>
         </ul>
       </div>
@@ -298,13 +338,13 @@
 
     <!-- ================= LAYER 2 : INGESTION ================= -->
     <div class="layer-title">
-      <span class="tag" style="background:rgba(167,139,250,0.14);color:var(--purple);">Ingestion</span>
+      <span class="tag" style="background:rgba(124,58,237,0.10);color:var(--purple);">Ingestion</span>
       <span class="desc">Idempotent batch + Auto Loader streaming</span>
       <span class="rule"></span>
     </div>
     <div class="grid two-col">
       <div class="card purple">
-        <div class="kicker">Batch Ingestion</div>
+        <div class="kicker" style="color:var(--purple);">Batch Ingestion</div>
         <h3>COPY INTO</h3>
         <p>Declarative, idempotent SQL ingestion from the landing zone into Delta tables. Safely re-runnable without duplicates.</p>
         <ul>
@@ -314,7 +354,7 @@
         </ul>
       </div>
       <div class="card pink">
-        <div class="kicker">Streaming Ingestion</div>
+        <div class="kicker" style="color:var(--pink);">Streaming Ingestion</div>
         <h3>Auto Loader · cloudFiles</h3>
         <p>Incremental file detection on the live feed with automatic schema inference and robust checkpointing.</p>
         <ul>
@@ -329,7 +369,7 @@
 
     <!-- ================= LAYER 3 : MEDALLION ================= -->
     <div class="layer-title">
-      <span class="tag" style="background:rgba(255,217,77,0.14);color:var(--gold);"">Medallion Pipeline</span>
+      <span class="tag" style="background:rgba(181,139,18,0.12);color:var(--gold);">Medallion Pipeline</span>
       <span class="desc">Raw → Clean → Analytics-ready on Delta Lake</span>
       <span class="rule"></span>
     </div>
@@ -392,10 +432,10 @@
           <div class="tables">
             <div class="tbl">dim_customer</div>
             <div class="tbl">dim_product</div>
+            <div class="tbl">dim_seller</div>
             <div class="tbl">dim_date</div>
             <div class="tbl">fact_sales</div>
             <div class="tbl">gold_daily_revenue</div>
-            <div class="tbl">gold_top_products</div>
           </div>
           <div class="note">Star-schema business models + curated aggregates built for fast analytical queries.</div>
           <span class="pill">Star schema · aggregates · analytics-ready</span>
@@ -408,7 +448,7 @@
 
     <!-- ================= LAYER 4 : SERVING ================= -->
     <div class="layer-title">
-      <span class="tag" style="background:rgba(244,114,182,0.14);color:var(--pink);">Serving &amp; Orchestration</span>
+      <span class="tag" style="background:rgba(219,39,119,0.10);color:var(--pink);">Serving &amp; Orchestration</span>
       <span class="desc">Operationalize the pipeline</span>
       <span class="rule"></span>
     </div>
@@ -423,7 +463,7 @@
         <h3>Analytical SQL</h3>
         <p>Window functions, CTEs and query plans for revenue trends, top products and customer cohorts.</p>
       </div>
-      <div class="card gold" style="--gold:#ffd94d;">
+      <div class="card gold">
         <div class="kicker" style="color:var(--gold);">Visualization</div>
         <h3>Sales Dashboard</h3>
         <p>Live visualizations and dashboard views published straight from the gold layer.</p>
